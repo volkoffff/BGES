@@ -1,1 +1,55 @@
-/data/
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+.env
+*.pth
+
+# ─── Jupyter ──────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ─── PySpark / Hadoop ─────────────────────────────────────────────────────────
+spark-warehouse/
+derby.log
+metastore_db/
+*.log
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+.docker/
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+# Windows alternate data streams
+*:Zone.Identifier
+*.Zone.Identifier
+
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.iml
+.project
+.classpath
+
+# ─── Data (large files tracked via Git LFS ou à exclure si trop volumineux) ──
+# Décommenter si les fichiers bruts ne doivent pas être versionnés :
+# data/**/*.csv
+# data/**/*.parquet
+# data/**/*.json
+
+# ─── Divers ───────────────────────────────────────────────────────────────────
+arborescence.txt
+global.txt

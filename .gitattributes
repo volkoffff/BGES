@@ -1,0 +1,41 @@
+# ─── Normalisation des fins de ligne ──────────────────────────────────────────
+* text=auto eol=lf
+
+# Force LF pour les fichiers texte courants
+*.py    text eol=lf
+*.md    text eol=lf
+*.toml  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.sh    text eol=lf
+*.env   text eol=lf
+*.txt   text eol=lf
+*.sql   text eol=lf
+*.json  text eol=lf
+
+# Notebooks : merge via nbstripout pour éviter les conflits de sorties
+*.ipynb text eol=lf
+
+# ─── Fichiers binaires ────────────────────────────────────────────────────────
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.svg   binary
+*.pdf   binary
+*.zip   binary
+*.tar   binary
+*.gz    binary
+*.jar   binary
+
+# ─── Fichiers de données ──────────────────────────────────────────────────────
+*.csv   text eol=lf
+*.tsv   text eol=lf
+*.parquet binary
+
+# ─── Diff lisible pour notebooks ─────────────────────────────────────────────
+*.ipynb diff=jupyter-notebook
+
+# ─── Exports linguistiques (GitHub Linguist) ──────────────────────────────────
+*.ipynb linguist-documentation=false

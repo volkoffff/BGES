@@ -1,0 +1,21 @@
+services:
+  spark-jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAVA_VERSION: "21.0.7-tem"
+    image: bges-pyspark:latest
+    container_name: bges_spark
+    ports:
+      - "8888:8888"   # Jupyter Lab
+      - "4040:4040"   # Spark UI
+    volumes:
+      - ./notebooks:/app/notebooks
+      - ./src:/app/src
+      - ./data:/app/data:ro
+    environment:
+      - SPARK_DRIVER_MEMORY=2g
+      - SPARK_EXECUTOR_MEMORY=2g
+    # Redémarre automatiquement sauf si arrêté manuellement
+    restart: unless-stopped
