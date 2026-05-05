@@ -25,6 +25,10 @@ target-version = "py313"
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 
+[tool.mypy]
+# pyspark n'a pas de stubs et tourne dans Docker, pas localement
+ignore_missing_imports = true
+
 [tool.nbstripout]
 # Supprime les sorties de cellules avant le commit pour des diffs propres
 extra_keys = "metadata.kernelspec metadata.language_info"

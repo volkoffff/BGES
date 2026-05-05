@@ -1,21 +1,17 @@
 services:
-  spark-jupyter:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        JAVA_VERSION: "21.0.7-tem"
-    image: bges-pyspark:latest
+  pyspark:
+    image: quay.io/jupyter/pyspark-notebook:latest
     container_name: bges_spark
     ports:
-      - "8888:8888"   # Jupyter Lab
-      - "4040:4040"   # Spark UI
+      - "8888:8888"
     volumes:
-      - ./notebooks:/app/notebooks
-      - ./src:/app/src
-      - ./data:/app/data:ro
+      - ./:/home/jovyan/work
+    working_dir: /home/jovyan/work
     environment:
-      - SPARK_DRIVER_MEMORY=2g
-      - SPARK_EXECUTOR_MEMORY=2g
-    # Redémarre automatiquement sauf si arrêté manuellement
+      JUPYTER_TOKEN: "bges"
+      JUPYTER_ENABLE_LAB: "yes"
+      SPARK_OPTS: >-
+        --driver-java-options=-Xms512m
+        -Dspark.driver.host=localhost
+        -Dspark.ui.enabled=false
     restart: unless-stopped

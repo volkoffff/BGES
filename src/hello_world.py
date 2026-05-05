@@ -9,6 +9,9 @@ def main() -> None:
         SparkSession.builder
         .appName("BGES – Hello World")
         .master("local[*]")
+        .config("spark.driver.host", "localhost")
+        .config("spark.driver.bindAddress", "0.0.0.0")
+        .config("spark.ui.enabled", "false")
         .config("spark.ui.showConsoleProgress", "false")
         .getOrCreate()
     )
