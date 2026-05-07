@@ -14,6 +14,12 @@ env/
 .env
 *.pth
 
+# ─── Jupyter Lab ───────────────────────────────────────────────────────────────
+.jupyterlab/
+
+# ─── Mypy ───────────────────────────────────────────────────────────────────────
+.mypy_cache/
+
 # ─── uv ───────────────────────────────────────────────────────────────────────
 # uv.lock est versionné — ne pas ignorer
 
@@ -38,12 +44,26 @@ ehthumbs.db
 
 # ─── IDE ──────────────────────────────────────────────────────────────────────
 .vscode/settings.json
+.vscode/launch.json
 .idea/
 *.iml
+*.swp
+*.swo
 
 # ─── Typage ───────────────────────────────────────────────────────────────────
 .mypy_cache/
 .ruff_cache/
+
+# ─── Tests ────────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ─── Warehouse Parquet (généré, non versionné) ───────────────────────────────
+warehouse/
+
+# ─── Geocodage cache ──────────────────────────────────────────────────────────
+city_coordinates.json
 
 # ─── Data (décommenter si les fichiers sont trop volumineux) ──────────────────
 # data/**/*.csv

@@ -56,13 +56,18 @@ DIM_TRANSPORT_TYPE {
     string TRANSPORT_NAME
     float CO2_FACTOR_KG_PER_KM
 }
-FACT_EQUIPMENT||--o{ DIM_DATE : "purchase date"
-FACT_EQUIPMENT||--o{ DIM_STAFF : ""
-FACT_EQUIPMENT||--o{ DIM_EQUIPMENT : ""
-FACT_MISSION||--o{ DIM_DATE : "mission date"
-FACT_MISSION||--o{ DIM_STAFF : ""
-FACT_MISSION||--o{ DIM_TRIP : ""
-FACT_MISSION||--o{ DIM_TRANSPORT_TYPE : ""
-DIM_STAFF||--o{ DIM_CITY : "home site"
-DIM_TRIP||--o{ DIM_CITY : "origin"
-DIM_TRIP||--o{ DIM_CITY : "destination"
+FACT_EQUIPMENT--o{ DIM_DATE : "purchase date"
+FACT_EQUIPMENT
+--o{ DIM_STAFF : ""
+FACT_EQUIPMENT--o{ DIM_EQUIPMENT : ""
+FACT_MISSION
+--o{ DIM_DATE : "mission date"
+FACT_MISSION--o{ DIM_STAFF : ""
+FACT_MISSION
+--o{ DIM_TRIP : ""
+FACT_MISSION--o{ DIM_TRANSPORT_TYPE : ""
+DIM_STAFF
+--o{ DIM_CITY : "home site"
+DIM_TRIP--o{ DIM_CITY : "origin"
+DIM_TRIP
+--o{ DIM_CITY : "destination"
