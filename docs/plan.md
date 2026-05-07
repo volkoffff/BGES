@@ -9,7 +9,7 @@ _Dernière mise à jour : 2026-05-07_
 ```
 Phase 1 — Infrastructure        [x]
 Phase 2 — Dimensions initiales  [x]
-Phase 3 — ETL journalier        [ ]
+Phase 3 — ETL journalier        [x]
 Phase 4 — Analyse & KPIs        [ ]
 ```
 
