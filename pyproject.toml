@@ -1,34 +1,80 @@
 [project]
-name = "bges"
+name = "nf26-bges"
 version = "0.1.0"
-description = "Bilan Gaz à Effet de Serre – NF26"
-requires-python = ">=3.13"
-
+description = "NF26 — Bilan Gaz à Effet de Serre"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+authors = [{ name = "Groupe BGES" }]
 dependencies = [
-    "pyspark>=4.0",
-    "pandas>=2.0",
-    "matplotlib>=3.8",
-]
-
-[project.optional-dependencies]
-dev = [
+    "pyspark>=3.5,<5",
+    "pandas>=2.2,<3",
+    "numpy>=2.0",
+    "pyarrow>=16,<19",
     "jupyterlab>=4.0",
-    "ipykernel>=6.0",
-    "nbstripout>=0.7",
-    "ruff>=0.4.0",
+    "ipykernel>=6.29",
+    "matplotlib>=3.9",
 ]
 
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+    "mypy>=1.10",
+    "nbstripout>=0.7",
+]
+
+# ─── Ruff ─────────────────────────────────────────────────────────────────────
 [tool.ruff]
+target-version = "py312"
 line-length = 88
-target-version = "py313"
+fix = true
+unsafe-fixes = false
+exclude = [".venv", "__pycache__", ".git"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+select = ["E", "F", "I", "UP", "B", "SIM", "N", "PD", "NPY", "PTH", "RUF"]
+ignore = [
+    "T201",   # print() autorisé dans les notebooks / code exploratoire
+    "RUF001", # caractères ambigus dans les strings (tirets, guillemets français)
+    "RUF002", # idem dans les docstrings
+    "N812",   # pyspark.functions importé comme F est une convention établie
+]
 
+[tool.ruff.lint.per-file-ignores]
+"**/*.ipynb" = [
+    "F401",   # imports inutilisés fréquents en exploration
+    "F811",   # redéfinition de nom
+    "E402",   # import pas en haut du fichier
+    "N8",     # nommage trop strict pour les notebooks
+]
+
+[tool.ruff.lint.isort]
+known-third-party = ["pyspark", "pandas", "numpy", "pyarrow", "matplotlib"]
+force-sort-within-sections = true
+
+# ─── Mypy ─────────────────────────────────────────────────────────────────────
 [tool.mypy]
-# pyspark n'a pas de stubs et tourne dans Docker, pas localement
-ignore_missing_imports = true
+python_version = "3.12"
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true   # pyspark n'a pas de stubs complets
+exclude = [".venv"]
 
+# ─── Pyright / Pylance (VSCode) ───────────────────────────────────────────────
+[tool.pyright]
+typeCheckingMode = "basic"
+reportMissingImports = "warning"
+reportMissingTypeStubs = "none"
+pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
+exclude = [".venv"]
+
+# ─── nbstripout ───────────────────────────────────────────────────────────────
 [tool.nbstripout]
-# Supprime les sorties de cellules avant le commit pour des diffs propres
 extra_keys = "metadata.kernelspec metadata.language_info"

@@ -1,89 +1,50 @@
-# BGES – Bilan Gaz à Effet de Serre
+# BGES — Bilan Gaz à Effet de Serre
 
-Projet NF26 – Traitement de données avec **PySpark** dans un environnement Docker partagé.
+Projet NF26 — Traitement de données GES avec **PySpark**.
 
-## Stack technique
+## Stack
 
-| Composant   | Version                      |
-|-------------|------------------------------|
-| Python      | 3.13                         |
-| Java        | Temurin 21 LTS (via SDKMAN)  |
-| PySpark     | 3.5.5                        |
-| Jupyter Lab | 4.4.2                        |
+| Outil        | Version              |
+|--------------|----------------------|
+| Python       | 3.12                 |
+| PySpark      | 4.x                  |
+| uv           | gestionnaire de paquets |
+| Jupyter Lab  | 4.x                  |
+| ruff         | lint + format        |
+| mypy         | typage statique      |
 
-## Prérequis
-
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (ou Docker Engine + Compose plugin)
-- Git
-
-## Démarrage rapide
+## Installation
 
 ```bash
-# 1. Cloner le dépôt
+# Cloner le repo
 git clone <url-du-repo>
 cd BGES
 
-# 2. Construire et lancer l'environnement (première fois ~5 min)
-docker compose up --build
+# Créer le venv et installer toutes les dépendances
+uv sync --all-groups
 
-# 3. Ouvrir Jupyter Lab dans le navigateur
-#    → http://localhost:8888
+# Configurer nbstripout (une fois par membre)
+uv run nbstripout --install
 ```
 
-Les notebooks se trouvent dans `notebooks/`, les scripts Python dans `src/`.
-Les données sont montées en lecture seule depuis `BDD/` → accessibles via `/app/data/` dans le conteneur.
-
-## Commandes utiles
+## Commandes
 
 ```bash
-# Lancer sans reconstruire l'image
-docker compose up
+uv run jupyter lab                # Jupyter Lab → http://localhost:8888
+uv run python src/hello_world.py
 
-# Arrêter proprement
-docker compose down
-
-# Reconstruire l'image (après modification du Dockerfile ou pyproject.toml)
-docker compose up --build
-
-# Exécuter un script Python directement
-docker compose exec spark-jupyter python src/hello_world.py
-
-# Ouvrir un shell dans le conteneur
-docker compose exec spark-jupyter bash
+uv run ruff check src/            # lint
+uv run ruff format src/           # format
+uv run mypy src/                  # typage
 ```
 
-## Interfaces disponibles
-
-| Interface   | URL                                                              |
-|-------------|------------------------------------------------------------------|
-| Jupyter Lab | <http://localhost:8888>                                          |
-| Spark UI    | <http://localhost:4040> (disponible pendant une session Spark)   |
-
-## Structure du projet
+## Structure
 
 ```text
 BGES/
-├── BDD/                    # Données brutes (lecture seule dans Docker)
-├── notebooks/              # Jupyter notebooks
-│   └── hello_world.ipynb
-├── src/                    # Scripts Python
-│   └── hello_world.py
-├── Dockerfile
-├── docker-compose.yml
+├── data/          # Données brutes (lecture seule)
+├── notebooks/     # Jupyter notebooks
+├── src/           # Scripts Python
 ├── pyproject.toml
-├── .gitignore
-└── .gitattributes
+└── uv.lock
 ```
-
-## Bonnes pratiques Git
-
-Les **sorties de cellules** sont supprimées avant le commit via `nbstripout`.
-Chaque membre de l'équipe doit le configurer une fois :
-
-```bash
-pip install nbstripout
-nbstripout --install  # dans le repo cloné
-```
-
-- Les fins de ligne sont normalisées en **LF** via `.gitattributes`.
-- Ne pas committer `__pycache__/`, `.ipynb_checkpoints/`, etc. (couverts par `.gitignore`).

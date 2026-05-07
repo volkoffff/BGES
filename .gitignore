@@ -14,6 +14,9 @@ env/
 .env
 *.pth
 
+# ─── uv ───────────────────────────────────────────────────────────────────────
+# uv.lock est versionné — ne pas ignorer
+
 # ─── Jupyter ──────────────────────────────────────────────────────────────────
 .ipynb_checkpoints/
 *.ipynb_checkpoints
@@ -24,16 +27,12 @@ derby.log
 metastore_db/
 *.log
 
-# ─── Docker ───────────────────────────────────────────────────────────────────
-.docker/
-
 # ─── OS ───────────────────────────────────────────────────────────────────────
 .DS_Store
 .DS_Store?
 ._*
 Thumbs.db
 ehthumbs.db
-# Windows alternate data streams
 *:Zone.Identifier
 *.Zone.Identifier
 
@@ -41,15 +40,11 @@ ehthumbs.db
 .vscode/settings.json
 .idea/
 *.iml
-.project
-.classpath
 
-# ─── Data (large files tracked via Git LFS ou à exclure si trop volumineux) ──
-# Décommenter si les fichiers bruts ne doivent pas être versionnés :
+# ─── Typage ───────────────────────────────────────────────────────────────────
+.mypy_cache/
+.ruff_cache/
+
+# ─── Data (décommenter si les fichiers sont trop volumineux) ──────────────────
 # data/**/*.csv
 # data/**/*.parquet
-# data/**/*.json
-
-# ─── Divers ───────────────────────────────────────────────────────────────────
-arborescence.txt
-global.txt
