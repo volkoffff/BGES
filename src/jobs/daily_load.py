@@ -1,7 +1,11 @@
+"""Daily ETL: build augmented DIM_CITY, DIM_TRIP, FACT_MISSION and FACT_EQUIPMENT."""
+
 import argparse
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, timedelta
 import os
+from pathlib import Path
 
 os.environ.setdefault("PYARROW_IGNORE_TIMEZONE", "1")
 
@@ -20,7 +24,7 @@ from utils.spark import get_spark
 
 @dataclass
 class DailyTables:
-    """Tables produites par le chargement journalier."""
+    """Tables produced by a single daily-load run."""
 
     dim_city: DataFrame
     dim_trip: DataFrame
@@ -32,15 +36,20 @@ def _collect_paths(
     config: ETLConfig,
     date_start: date,
     date_end: date,
-    file_fn: object,
+    file_fn: Callable[[str, str], Path],
 ) -> list[str]:
-    """Collecter les chemins existants pour tous les sites dans la plage de dates."""
-    paths = []
+    """Return paths of all existing files for every site in [date_start, date_end].
+
+    Files that do not exist for a given (site, date) pair are silently skipped so
+    that gaps in the source data (e.g. weekends with no activity) do not cause
+    errors at the Spark reader level.
+    """
+    paths: list[str] = []
     current = date_start
     while current <= date_end:
         date_str = current.strftime("%Y%m%d")
         for site in SITES:
-            p = file_fn(site, date_str)  # type: ignore[operator]
+            p = file_fn(site, date_str)
             if p.exists():
                 paths.append(str(p))
         current += timedelta(days=1)
@@ -54,11 +63,17 @@ def run_daily_load(
     date_end: date,
     initial: InitialTables,
 ) -> DailyTables:
-    """Orchestrer l'ETL journalier pour une plage de dates et retourner les tables."""
+    """Build all daily tables (DIM_CITY, DIM_TRIP, FACT_MISSION, FACT_EQUIPMENT)."""
     mission_paths = _collect_paths(config, date_start, date_end, config.mission_file)
     equipment_paths = _collect_paths(
         config, date_start, date_end, config.equipment_file
     )
+
+    if not mission_paths:
+        raise ValueError(
+            f"No mission files found for {date_start} → {date_end}. "
+            "Check --date-debut / --date-fin and the data directory."
+        )
 
     sdf_missions_raw = read_semicolon_many(
         spark, mission_paths, schema=MISSION_RAW_SCHEMA
@@ -71,10 +86,9 @@ def run_daily_load(
         spark, config, sdf_missions_raw, initial.dim_city
     ).cache()
 
-    sdf_dim_trip = build_dim_trip(spark, sdf_missions_raw, sdf_dim_city)
+    sdf_dim_trip = build_dim_trip(sdf_missions_raw, sdf_dim_city)
 
     sdf_fact_mission = build_fact_mission(
-        spark,
         sdf_missions_raw,
         initial.dim_date,
         initial.dim_staff,
@@ -84,7 +98,6 @@ def run_daily_load(
     )
 
     sdf_fact_equipment = build_fact_equipment(
-        spark,
         sdf_equipment_raw,
         initial.dim_date,
         initial.dim_staff,
@@ -100,10 +113,10 @@ def run_daily_load(
 
 
 def main() -> None:
-    """Point d'entrée CLI : --date-debut YYYY-MM-DD --date-fin YYYY-MM-DD."""
-    parser = argparse.ArgumentParser(description="ETL journalier BGES")
-    parser.add_argument("--date-debut", required=True, help="Date début (YYYY-MM-DD)")
-    parser.add_argument("--date-fin", required=True, help="Date fin (YYYY-MM-DD)")
+    """CLI entry point: --date-debut YYYY-MM-DD --date-fin YYYY-MM-DD."""
+    parser = argparse.ArgumentParser(description="BGES daily ETL")
+    parser.add_argument("--date-debut", required=True, help="Start date (YYYY-MM-DD)")
+    parser.add_argument("--date-fin", required=True, help="End date (YYYY-MM-DD)")
     args = parser.parse_args()
 
     date_start = date.fromisoformat(args.date_debut)
@@ -112,16 +125,16 @@ def main() -> None:
     spark = get_spark()
     config = ETLConfig()
 
-    print("Chargement initial…")
+    print("Running initial load…")
     initial = run_initial_load(spark, config)
 
-    print(f"ETL journalier {date_start} → {date_end}…")
+    print(f"Running daily ETL {date_start} → {date_end}…")
     daily = run_daily_load(spark, config, date_start, date_end, initial)
 
-    print(f"DIM_CITY     : {daily.dim_city.count()} villes")
-    print(f"DIM_TRIP     : {daily.dim_trip.count()} trajets")
-    print(f"FACT_MISSION : {daily.fact_mission.count()} missions")
-    print(f"FACT_EQUIPMENT: {daily.fact_equipment.count()} achats")
+    print(f"DIM_CITY      : {daily.dim_city.count()} cities")
+    print(f"DIM_TRIP      : {daily.dim_trip.count()} trips")
+    print(f"FACT_MISSION  : {daily.fact_mission.count()} missions")
+    print(f"FACT_EQUIPMENT: {daily.fact_equipment.count()} purchases")
 
     spark.stop()
 

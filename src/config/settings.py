@@ -1,3 +1,5 @@
+"""Project-wide constants and path-resolution helpers for all ETL jobs."""
+
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -7,6 +9,8 @@ US_SITES: frozenset[str] = frozenset({"NEWYORK", "LOSANGELES"})
 
 @dataclass(frozen=True)
 class ETLConfig:
+    """Immutable configuration: data root path and all source-file path helpers."""
+
     data_path: Path = Path("data")
 
     def personnel_path(self, site: str) -> Path:

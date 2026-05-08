@@ -1,24 +1,26 @@
-from pyspark.sql import DataFrame, SparkSession
+"""Build FACT_MISSION: CO2 impact per business trip across all sites."""
+
+from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
 from models.schemas import FACT_MISSION_SCHEMA
 
-# Normalisation multilingue de TYPE_MISSION vers 5 valeurs canoniques françaises.
+# Maps all source TYPE_MISSION values to 5 canonical French labels.
 _TYPE_MISSION_MAP = {
-    # Français (Paris)
+    # French (Paris)
     "Conférence": "Conférence",
     "Développement": "Développement",
     "Formation": "Formation",
     "Rencontre entreprises": "Rencontre entreprises",
     "Réunion": "Réunion",
-    # Allemand (Berlin)
+    # German (Berlin)
     "Entwicklung": "Développement",
     "Geschäftstreffen": "Rencontre entreprises",
     "Konferenz": "Conférence",
     "Meeting": "Réunion",
     "Schulung": "Formation",
-    # Anglais (London, New York, Los Angeles, Shanghai)
+    # English (London, New York, Los Angeles, Shanghai)
     "Business Meeting": "Rencontre entreprises",
     "Conference": "Conférence",
     "Development": "Développement",
@@ -28,7 +30,6 @@ _TYPE_MISSION_MAP = {
 
 
 def build_fact_mission(
-    spark: SparkSession,
     sdf_missions_raw: DataFrame,
     sdf_dim_date: DataFrame,
     sdf_dim_staff: DataFrame,
@@ -36,7 +37,11 @@ def build_fact_mission(
     sdf_dim_transport_type: DataFrame,
     sdf_dim_city: DataFrame,
 ) -> DataFrame:
-    """Construire FACT_MISSION : CO2 = distance × facteur × (2 si aller-retour)."""
+    """Return FACT_MISSION with CO2_IMPACT_KG = distance × factor × (2 if round-trip).
+
+    "Avion" trips are split into short-haul (< 1 000 km) and long-haul (≥ 1 000 km)
+    before joining DIM_TRANSPORT_TYPE so the correct ADEME factor is applied.
+    """
     type_map_expr = F.create_map(
         *[x for kv in _TYPE_MISSION_MAP.items() for x in (F.lit(kv[0]), F.lit(kv[1]))]
     )
@@ -50,18 +55,17 @@ def build_fact_mission(
         F.col("CITY_NAME").alias("VILLE_DESTINATION"),
     )
 
-    # Résoudre le transport "Avion" en court-courrier / long-courrier selon la distance.
     sdf = (
         sdf_missions_raw.withColumn(
             "DATE_ISO", F.to_date(F.col("DATE_MISSION"), "yyyy-MM-dd HH:mm:ss")
         )
-        .withColumn("ROUND_TRIP_FLG", F.col("ALLER_RETOUR") == F.lit("oui"))
-        .withColumn("MISSION_TYPE", type_map_expr[F.col("TYPE_MISSION")])
-        .join(
-            sdf_dim_date.select("SK_DATE", "DATE_ISO"),
-            "DATE_ISO",
-            "left",
+        # Null-safe: coalesce so that a missing ALLER_RETOUR becomes False (one-way).
+        .withColumn(
+            "ROUND_TRIP_FLG",
+            F.coalesce(F.col("ALLER_RETOUR") == F.lit("oui"), F.lit(False)),
         )
+        .withColumn("MISSION_TYPE", type_map_expr[F.col("TYPE_MISSION")])
+        .join(sdf_dim_date.select("SK_DATE", "DATE_ISO"), "DATE_ISO", "left")
         .join(
             sdf_dim_staff.select(
                 F.col("SK_STAFF"), F.col("NK_STAFF").alias("ID_PERSONNEL")
@@ -78,6 +82,7 @@ def build_fact_mission(
             ["SK_CITY_ORIGIN", "SK_CITY_DESTINATION"],
             "left",
         )
+        # Resolve "Avion" to short-haul or long-haul based on DISTANCE_KM.
         .withColumn(
             "TRANSPORT_NAME",
             F.when(

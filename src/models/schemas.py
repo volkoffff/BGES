@@ -1,3 +1,5 @@
+"""PySpark StructType definitions for all DWH tables and raw CSV sources."""
+
 from pyspark.sql.types import (
     BooleanType,
     DateType,

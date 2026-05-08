@@ -1,3 +1,5 @@
+"""Abstract base class for ETL jobs: defines the extract → transform → run contract."""
+
 from abc import ABC, abstractmethod
 
 from pyspark.sql import DataFrame, SparkSession

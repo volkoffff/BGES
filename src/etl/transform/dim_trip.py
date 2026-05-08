@@ -1,4 +1,6 @@
-from pyspark.sql import DataFrame, SparkSession
+"""Build DIM_TRIP: distinct (origin, destination) city pairs with geodesic distance."""
+
+from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.types import DoubleType
 from pyspark.sql.window import Window
@@ -8,11 +10,14 @@ from utils.distance import geodesic_km
 
 
 def build_dim_trip(
-    spark: SparkSession,
     sdf_missions_raw: DataFrame,
     sdf_dim_city: DataFrame,
 ) -> DataFrame:
-    """Construire DIM_TRIP depuis les paires (départ, destination) distinctes."""
+    """Return one row per distinct (origin, destination) pair with DISTANCE_KM.
+
+    The UDF calls geopy at the worker level, so *sdf_dim_city* must already
+    contain LAT/LON values (i.e. come from ``build_dim_city_augmented``).
+    """
     geodesic_udf = F.udf(geodesic_km, DoubleType())
 
     sdf_pairs = (

@@ -1,3 +1,5 @@
+"""SparkSession factory for local development and script execution."""
+
 import os
 
 os.environ["PYARROW_IGNORE_TIMEZONE"] = "1"

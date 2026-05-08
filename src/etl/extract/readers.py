@@ -1,3 +1,5 @@
+"""PySpark CSV reader helpers for semicolon- and comma-delimited source files."""
+
 from collections.abc import Sequence
 from pathlib import Path
 

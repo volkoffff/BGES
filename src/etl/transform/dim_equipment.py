@@ -1,3 +1,5 @@
+"""Build DIM_EQUIPMENT from the equipment CO2 reference CSV."""
+
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window

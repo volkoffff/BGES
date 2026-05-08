@@ -1,3 +1,5 @@
+"""Build DIM_DATE by generating one row per calendar day for a given range."""
+
 from datetime import date, timedelta
 
 from pyspark.sql import DataFrame, SparkSession

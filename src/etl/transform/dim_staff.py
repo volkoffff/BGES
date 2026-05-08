@@ -1,3 +1,5 @@
+"""Build DIM_STAFF from PERSONNEL files with multilingual job-title normalisation."""
+
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
@@ -6,7 +8,7 @@ from config.settings import SITES, ETLConfig
 from etl.extract.readers import read_semicolon_many
 from models.schemas import DIM_STAFF_SCHEMA, PERSONNEL_RAW_SCHEMA
 
-# Maps all multilingual FONCTION_PERSONNEL values to canonical French labels.
+# Maps all multilingual FONCTION_PERSONNEL values to 5 canonical French labels.
 _FONCTION_MAP = {
     # French (Paris)
     "Cadre": "Cadre",
