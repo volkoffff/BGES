@@ -2,7 +2,6 @@
 
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
-from pyspark.sql.window import Window
 
 from models.schemas import FACT_MISSION_SCHEMA
 
@@ -41,6 +40,18 @@ def build_fact_mission(
 
     "Avion" trips are split into short-haul (< 1 000 km) and long-haul (≥ 1 000 km)
     before joining DIM_TRANSPORT_TYPE so the correct ADEME factor is applied.
+
+    Args:
+        sdf_missions_raw: Raw missions DataFrame (MISSION_RAW_SCHEMA).
+        sdf_dim_date: DIM_DATE dimension for date surrogate-key resolution.
+        sdf_dim_staff: DIM_STAFF dimension for staff surrogate-key resolution.
+        sdf_dim_trip: DIM_TRIP dimension providing SK_TRIP and DISTANCE_KM.
+        sdf_dim_transport_type: DIM_TRANSPORT_TYPE providing CO2_FACTOR_KG_PER_KM.
+        sdf_dim_city: DIM_CITY dimension used to resolve origin/destination SKs.
+
+    Returns:
+        DataFrame matching FACT_MISSION_SCHEMA with one row per mission and
+        CO2_IMPACT_KG computed from distance, transport factor and trip direction.
     """
     type_map_expr = F.create_map(
         *[x for kv in _TYPE_MISSION_MAP.items() for x in (F.lit(kv[0]), F.lit(kv[1]))]
@@ -110,10 +121,7 @@ def build_fact_mission(
         )
         .withColumnRenamed("ID_MISSION", "NK_MISSION")
         .withColumnRenamed("SK_DATE", "SK_DATE_MISSION")
-        .withColumn(
-            "SK_FACT_MISSION",
-            F.row_number().over(Window.orderBy("NK_MISSION")).cast("long"),
-        )
+        .withColumn("SK_FACT_MISSION", F.monotonically_increasing_id())
     )
 
     return sdf.select(FACT_MISSION_SCHEMA.fieldNames())

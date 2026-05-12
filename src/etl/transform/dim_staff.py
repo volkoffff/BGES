@@ -34,7 +34,18 @@ _FONCTION_MAP = {
 def build_dim_staff(
     spark: SparkSession, config: ETLConfig, sdf_dim_city: DataFrame
 ) -> DataFrame:
-    """Build DIM_STAFF from all PERSONNEL files with multilingual job normalization."""
+    """Build DIM_STAFF from all PERSONNEL files with multilingual job normalization.
+
+    Args:
+        spark: Active SparkSession.
+        config: ETL configuration providing PERSONNEL file paths.
+        sdf_dim_city: DIM_CITY DataFrame used to resolve each staff member's
+            home city to a SK_SITE surrogate key.
+
+    Returns:
+        DataFrame matching DIM_STAFF_SCHEMA with one row per staff member and
+        JOB_TITLE normalized to one of 5 canonical French labels.
+    """
     paths = [config.personnel_path(s) for s in SITES]
     sdf_raw = read_semicolon_many(spark, paths, schema=PERSONNEL_RAW_SCHEMA)
 
@@ -57,7 +68,9 @@ def build_dim_staff(
         )
         .withColumn(
             "SK_STAFF",
-            F.row_number().over(Window.orderBy("NK_STAFF")).cast("long"),
+            F.row_number()
+            .over(Window.partitionBy(F.lit(1)).orderBy("NK_STAFF"))
+            .cast("long"),
         )
         .select(DIM_STAFF_SCHEMA.fieldNames())
     )

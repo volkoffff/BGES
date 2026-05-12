@@ -12,7 +12,17 @@ def build_dim_date(
     start: date = date(2026, 1, 1),
     end: date = date(2027, 12, 31),
 ) -> DataFrame:
-    """Generate one DIM_DATE row per calendar day in [start, end]."""
+    """Generate one DIM_DATE row per calendar day in [start, end].
+
+    Args:
+        spark: Active SparkSession used to create the DataFrame.
+        start: First date to include, inclusive (default: 2026-01-01).
+        end: Last date to include, inclusive (default: 2027-12-31).
+
+    Returns:
+        DataFrame matching DIM_DATE_SCHEMA with SK_DATE, DATE_ISO, YEAR,
+        MONTH and DAY columns.
+    """
     rows = []
     sk = 1
     current = start

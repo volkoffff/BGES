@@ -1,5 +1,7 @@
 """Build DIM_CITY from org-site PERSONNEL files (initial) and mission cities (daily)."""
 
+import logging
+
 import country_converter as coco
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
@@ -10,35 +12,63 @@ from etl.extract.readers import read_semicolon_many
 from models.schemas import DIM_CITY_SCHEMA, PERSONNEL_RAW_SCHEMA
 from utils.geocoding import geocode_cities
 
+# country_converter logs a WARNING for every unrecognised name (e.g. French
+# abbreviations like "Emirats").  Raise to ERROR so only hard failures surface.
+logging.getLogger("country_converter").setLevel(logging.ERROR)
+
 # Instantiated once at module level — the constructor loads a large reference CSV.
 _CC = coco.CountryConverter()
 
 
 def _country_name_to_iso2(country_name: str) -> str | None:
-    """Return the ISO-3166-1 alpha-2 code for *country_name*, or None if unknown."""
+    """Return the ISO-3166-1 alpha-2 code for *country_name*, or None if unknown.
+
+    Args:
+        country_name: Full country name as it appears in the source files.
+
+    Returns:
+        Two-letter ISO-3166-1 alpha-2 code (e.g. "FR"), or None when
+        country_converter cannot resolve the name.
+    """
     iso2 = _CC.convert(country_name, to="ISO2")
     return None if iso2 == "not found" else str(iso2)
 
 
 def _pays_to_iso2_map(country_names: list[str]) -> dict[str, str | None]:
-    """Map each country name to its ISO-3166-1 alpha-2 code via country_converter."""
+    """Map each country name to its ISO-3166-1 alpha-2 code via country_converter.
+
+    Args:
+        country_names: List of distinct country names to convert.
+
+    Returns:
+        Mapping of country name to ISO-3166-1 alpha-2 code, or None for names
+        that country_converter cannot resolve.
+    """
     return {name: _country_name_to_iso2(name) for name in country_names}
 
 
 def build_dim_city_initial(spark: SparkSession, config: ETLConfig) -> DataFrame:
-    """Build DIM_CITY for the 6 org sites extracted from PERSONNEL files."""
+    """Build DIM_CITY for the 6 org sites extracted from PERSONNEL files.
+
+    Args:
+        spark: Active SparkSession.
+        config: ETL configuration providing PERSONNEL file paths.
+
+    Returns:
+        DataFrame matching DIM_CITY_SCHEMA with one row per distinct city found
+        in the PERSONNEL files.  LAT, LON and TIMEZONE_IANA are null at this
+        stage; IS_ORG_SITE is True for every row.
+    """
     paths = [config.personnel_path(s) for s in SITES]
     sdf_raw = read_semicolon_many(spark, paths, schema=PERSONNEL_RAW_SCHEMA)
 
-    sdf_cities = (
-        sdf_raw.select(F.col("VILLE").alias("CITY_NAME"), F.col("PAYS")).distinct()
-    )
+    sdf_cities = sdf_raw.select(
+        F.col("VILLE").alias("CITY_NAME"), F.col("PAYS")
+    ).distinct()
 
     # Collect the small country list at the driver to build a Spark map expression.
     pays_values = [
-        row.PAYS
-        for row in sdf_cities.select("PAYS").collect()
-        if row.PAYS is not None
+        row.PAYS for row in sdf_cities.select("PAYS").collect() if row.PAYS is not None
     ]
     iso2_map = _pays_to_iso2_map(pays_values)
     country_map_expr = F.create_map(
@@ -53,7 +83,9 @@ def build_dim_city_initial(spark: SparkSession, config: ETLConfig) -> DataFrame:
         .withColumn("LON", F.lit(None).cast("double"))
         .withColumn(
             "SK_CITY",
-            F.row_number().over(Window.orderBy("CITY_NAME")).cast("long"),
+            F.row_number()
+            .over(Window.partitionBy(F.lit(1)).orderBy("CITY_NAME"))
+            .cast("long"),
         )
         .select(DIM_CITY_SCHEMA.fieldNames())
     )
@@ -71,6 +103,18 @@ def build_dim_city_augmented(
     and gain LAT/LON from the geocoding cache.  New cities (mission origins and
     destinations not already present) are appended with consecutive SK_CITY values
     starting after the maximum initial SK.
+
+    Args:
+        spark: Active SparkSession used to create the final DataFrame.
+        config: ETL configuration providing the geocoding cache path.
+        sdf_missions_raw: Raw missions DataFrame containing VILLE_DEPART,
+            PAYS_DEPART, VILLE_DESTINATION and PAYS_DESTINATION columns.
+        sdf_dim_city_initial: DIM_CITY produced by build_dim_city_initial,
+            used as the base set of already-known cities.
+
+    Returns:
+        DataFrame matching DIM_CITY_SCHEMA combining original org-site rows
+        (with LAT/LON filled) and new mission cities (IS_ORG_SITE = False).
     """
     initial_rows = sdf_dim_city_initial.collect()
     initial_city_names = {r.CITY_NAME for r in initial_rows}
@@ -117,27 +161,31 @@ def build_dim_city_augmented(
     # Update initial org-site rows with geocoded coordinates.
     for r in initial_rows:
         lat_lon = coords.get(r.CITY_NAME)
-        result_rows.append((
-            r.SK_CITY,
-            r.CITY_NAME,
-            r.COUNTRY_ISO2,
-            r.IS_ORG_SITE,
-            r.TIMEZONE_IANA,
-            lat_lon[0] if lat_lon else None,
-            lat_lon[1] if lat_lon else None,
-        ))
+        result_rows.append(
+            (
+                r.SK_CITY,
+                r.CITY_NAME,
+                r.COUNTRY_ISO2,
+                r.IS_ORG_SITE,
+                r.TIMEZONE_IANA,
+                lat_lon[0] if lat_lon else None,
+                lat_lon[1] if lat_lon else None,
+            )
+        )
 
     # Append new cities sorted deterministically to keep SK assignment stable.
     for i, city_name in enumerate(sorted(new_city_pays.keys()), start=max_sk + 1):
         lat_lon = coords.get(city_name)
-        result_rows.append((
-            i,
-            city_name,
-            city_iso2.get(city_name),
-            False,
-            None,
-            lat_lon[0] if lat_lon else None,
-            lat_lon[1] if lat_lon else None,
-        ))
+        result_rows.append(
+            (
+                i,
+                city_name,
+                city_iso2.get(city_name),
+                False,
+                None,
+                lat_lon[0] if lat_lon else None,
+                lat_lon[1] if lat_lon else None,
+            )
+        )
 
     return spark.createDataFrame(result_rows, schema=DIM_CITY_SCHEMA)

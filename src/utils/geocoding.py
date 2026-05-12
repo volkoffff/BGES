@@ -11,7 +11,15 @@ logger = logging.getLogger(__name__)
 
 
 def _load_cache(path: Path) -> dict[str, list[float] | None]:
-    """Load city coordinates from the JSON cache file; return {} if absent."""
+    """Load city coordinates from the JSON cache file.
+
+    Args:
+        path: Path to the JSON cache file.
+
+    Returns:
+        Mapping of city name to [lat, lon] list, or empty dict if the file
+        does not exist.
+    """
     if path.exists():
         raw: dict[str, list[float] | None] = json.loads(
             path.read_text(encoding="utf-8")
@@ -21,10 +29,13 @@ def _load_cache(path: Path) -> dict[str, list[float] | None]:
 
 
 def _save_cache(path: Path, cache: dict[str, list[float] | None]) -> None:
-    """Persist the coordinates cache to a JSON file."""
-    path.write_text(
-        json.dumps(cache, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    """Persist the coordinates cache to a JSON file.
+
+    Args:
+        path: Destination path for the JSON file.
+        cache: Mapping of city name to [lat, lon] list, or None for failed lookups.
+    """
+    path.write_text(json.dumps(cache, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 def geocode_cities(
@@ -35,6 +46,14 @@ def geocode_cities(
     Results are written back to *cache_path* after each new lookup so the file
     acts as a permanent store across runs.  Duplicate names in *city_names* are
     deduplicated before fetching to avoid redundant API calls.
+
+    Args:
+        city_names: List of city names to geocode (may contain duplicates).
+        cache_path: Path to the JSON cache file used to persist coordinates.
+
+    Returns:
+        Mapping of city name to (latitude, longitude) tuple, or None when
+        Nominatim could not resolve the city.
     """
     cache = _load_cache(cache_path)
 

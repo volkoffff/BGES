@@ -7,6 +7,7 @@ SITES: list[str] = ["PARIS", "BERLIN", "LONDON", "NEWYORK", "LOSANGELES", "SHANG
 EU_SITES: frozenset[str] = frozenset({"PARIS", "BERLIN", "LONDON"})
 US_SITES: frozenset[str] = frozenset({"NEWYORK", "LOSANGELES"})
 
+
 @dataclass(frozen=True)
 class ETLConfig:
     """Immutable configuration: data root path and all source-file path helpers."""

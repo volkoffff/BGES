@@ -2,7 +2,6 @@
 
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
-from pyspark.sql.window import Window
 
 from models.schemas import FACT_EQUIPMENT_SCHEMA
 
@@ -22,6 +21,16 @@ def build_fact_equipment(
     1. Exact match on (TYPE, MODELE) after trimming raw whitespace.
     2. Fallback to the (TYPE, 'modèle par défaut') entry for the same type.
     CO2_IMPACT_KG is null only when neither match succeeds (unknown type).
+
+    Args:
+        sdf_equipment_raw: Raw equipment DataFrame (EQUIPMENT_RAW_SCHEMA).
+        sdf_dim_date: DIM_DATE dimension for purchase-date surrogate-key resolution.
+        sdf_dim_staff: DIM_STAFF dimension for staff surrogate-key resolution.
+        sdf_dim_equipment: DIM_EQUIPMENT dimension used for CO2 impact lookup.
+
+    Returns:
+        DataFrame matching FACT_EQUIPMENT_SCHEMA with one row per purchase and
+        CO2_IMPACT_KG resolved via exact or fallback model match.
     """
     sdf_exact = sdf_dim_equipment.select(
         F.col("SK_EQUIPMENT").alias("SK_EQUIPMENT_EXACT"),
@@ -68,9 +77,6 @@ def build_fact_equipment(
         )
         .withColumnRenamed("ID_MATERIELINFO", "NK_EQUIPMENT")
         .withColumnRenamed("SK_DATE", "SK_DATE_PURCHASE")
-        .withColumn(
-            "SK_FACT_EQUIPMENT",
-            F.row_number().over(Window.orderBy("NK_EQUIPMENT")).cast("long"),
-        )
+        .withColumn("SK_FACT_EQUIPMENT", F.monotonically_increasing_id())
         .select(FACT_EQUIPMENT_SCHEMA.fieldNames())
     )

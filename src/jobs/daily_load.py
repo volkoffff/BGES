@@ -43,6 +43,15 @@ def _collect_paths(
     Files that do not exist for a given (site, date) pair are silently skipped so
     that gaps in the source data (e.g. weekends with no activity) do not cause
     errors at the Spark reader level.
+
+    Args:
+        config: ETL configuration used to resolve the base data directory.
+        date_start: First date of the period to scan (inclusive).
+        date_end: Last date of the period to scan (inclusive).
+        file_fn: Callable mapping (site, date_str) to the expected file Path.
+
+    Returns:
+        List of string paths for files that exist on disk, in (date, site) order.
     """
     paths: list[str] = []
     current = date_start
@@ -63,7 +72,21 @@ def run_daily_load(
     date_end: date,
     initial: InitialTables,
 ) -> DailyTables:
-    """Build all daily tables (DIM_CITY, DIM_TRIP, FACT_MISSION, FACT_EQUIPMENT)."""
+    """Build all daily tables (DIM_CITY, DIM_TRIP, FACT_MISSION, FACT_EQUIPMENT).
+
+    Args:
+        spark: Active SparkSession.
+        config: ETL configuration providing source file paths and cache location.
+        date_start: First date of the daily period to process (inclusive).
+        date_end: Last date of the daily period to process (inclusive).
+        initial: Static dimension tables produced by run_initial_load.
+
+    Returns:
+        DailyTables dataclass holding the four computed DataFrames.
+
+    Raises:
+        ValueError: When no mission files are found for the requested date range.
+    """
     mission_paths = _collect_paths(config, date_start, date_end, config.mission_file)
     equipment_paths = _collect_paths(
         config, date_start, date_end, config.equipment_file

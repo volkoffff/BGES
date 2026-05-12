@@ -30,7 +30,18 @@ def run_initial_load(
     date_start: date = date(2026, 1, 1),
     date_end: date = date(2027, 12, 31),
 ) -> InitialTables:
-    """Build all static dimension tables and return them as a dataclass."""
+    """Build all static dimension tables and return them as a dataclass.
+
+    Args:
+        spark: Active SparkSession.
+        config: ETL configuration providing all source file paths.
+        date_start: First calendar day for DIM_DATE (default: 2026-01-01).
+        date_end: Last calendar day for DIM_DATE (default: 2027-12-31).
+
+    Returns:
+        InitialTables dataclass holding the five dimension DataFrames:
+        DIM_DATE, DIM_TRANSPORT_TYPE, DIM_EQUIPMENT, DIM_CITY and DIM_STAFF.
+    """
     sdf_dim_date = build_dim_date(spark, date_start, date_end)
     sdf_dim_transport_type = build_dim_transport_type(spark)
     sdf_dim_equipment = build_dim_equipment(spark, config)

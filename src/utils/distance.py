@@ -13,6 +13,15 @@ def geodesic_km(
 
     Returns *None* when any coordinate is missing so the UDF propagates nulls
     cleanly without raising an exception at the worker level.
+
+    Args:
+        lat1: Latitude of the origin point in decimal degrees.
+        lon1: Longitude of the origin point in decimal degrees.
+        lat2: Latitude of the destination point in decimal degrees.
+        lon2: Longitude of the destination point in decimal degrees.
+
+    Returns:
+        Geodesic distance in kilometres, or None if any coordinate is null.
     """
     if any(v is None for v in (lat1, lon1, lat2, lon2)):
         return None

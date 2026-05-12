@@ -15,5 +15,13 @@ _ROWS = [
 
 
 def build_dim_transport_type(spark: SparkSession) -> DataFrame:
-    """Build DIM_TRANSPORT_TYPE from hard-coded CO2 factors (kg/km)."""
+    """Build DIM_TRANSPORT_TYPE from hard-coded CO2 factors (kg/km).
+
+    Args:
+        spark: Active SparkSession used to create the DataFrame.
+
+    Returns:
+        DataFrame matching DIM_TRANSPORT_TYPE_SCHEMA with 5 transport modes
+        and their ADEME Base Carbone 2024 emission factors.
+    """
     return spark.createDataFrame(_ROWS, schema=DIM_TRANSPORT_TYPE_SCHEMA)
