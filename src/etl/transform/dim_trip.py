@@ -3,7 +3,6 @@
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.types import DoubleType
-from pyspark.sql.window import Window
 
 from models.schemas import DIM_TRIP_SCHEMA
 
@@ -65,15 +64,6 @@ def build_dim_trip(
             "DISTANCE_KM",
             _geodesic_km("LAT_ORIGIN", "LON_ORIGIN", "LAT_DEST", "LON_DEST"),
         )
-        .withColumn(
-            "SK_TRIP",
-            F.row_number()
-            .over(
-                Window.partitionBy(F.lit(1)).orderBy(
-                    "SK_CITY_ORIGIN", "SK_CITY_DESTINATION"
-                )
-            )
-            .cast("long"),
-        )
+        .withColumn("SK_TRIP", F.monotonically_increasing_id())
         .select(DIM_TRIP_SCHEMA.fieldNames())
     )

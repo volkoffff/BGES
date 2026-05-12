@@ -1,0 +1,15 @@
+# ─── BGES — Local path configuration ─────────────────────────────────────────
+#
+# Copy this file to config/config.toml and adjust the paths to match your
+# local setup.  config.toml is gitignored so each team member keeps their own.
+#
+# All paths are relative to the project root (the folder containing this file's
+# parent directory), or absolute.  Relative paths are recommended so the
+# project stays portable across machines.
+
+[paths]
+# Directory containing the BDD_BGES_* site folders.
+data_path = "data"
+
+# Python source root added to sys.path in notebooks.
+src_path = "src"

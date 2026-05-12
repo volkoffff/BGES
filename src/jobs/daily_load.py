@@ -18,7 +18,7 @@ from etl.transform.dim_trip import build_dim_trip
 from etl.transform.fact_equipment import build_fact_equipment
 from etl.transform.fact_mission import build_fact_mission
 from jobs.initial_load import InitialTables, run_initial_load
-from models.schemas import EQUIPMENT_RAW_SCHEMA, MISSION_RAW_SCHEMA
+from models.schemas import DIM_CITY_SCHEMA, EQUIPMENT_RAW_SCHEMA, MISSION_RAW_SCHEMA
 from utils.spark import get_spark
 
 
@@ -105,11 +105,15 @@ def run_daily_load(
         spark, equipment_paths, schema=EQUIPMENT_RAW_SCHEMA
     )
 
-    sdf_dim_city = build_dim_city_augmented(
+    # build_dim_city_augmented returns LAT/LON alongside the public columns so
+    # that build_dim_trip can compute geodesic distances.  We cache the full
+    # DataFrame to avoid geocoding twice, then project to the public schema.
+    sdf_dim_city_coords = build_dim_city_augmented(
         spark, config, sdf_missions_raw, initial.dim_city
     ).cache()
 
-    sdf_dim_trip = build_dim_trip(sdf_missions_raw, sdf_dim_city)
+    sdf_dim_trip = build_dim_trip(sdf_missions_raw, sdf_dim_city_coords)
+    sdf_dim_city = sdf_dim_city_coords.select(DIM_CITY_SCHEMA.fieldNames())
 
     sdf_fact_mission = build_fact_mission(
         sdf_missions_raw,

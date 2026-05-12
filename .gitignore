@@ -62,6 +62,9 @@ htmlcov/
 # ─── Warehouse Parquet (généré, non versionné) ───────────────────────────────
 warehouse/
 
+# ─── Configuration locale (chemins personnels) ────────────────────────────────
+config/config.toml
+
 # ─── Geocodage cache ──────────────────────────────────────────────────────────
 city_coordinates.json
 

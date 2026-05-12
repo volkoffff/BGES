@@ -5,12 +5,22 @@ import logging
 import country_converter as coco
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.window import Window
+from pyspark.sql.types import DoubleType, StructField, StructType
 
 from config.settings import SITES, ETLConfig
 from etl.extract.readers import read_semicolon_many
 from models.schemas import DIM_CITY_SCHEMA, PERSONNEL_RAW_SCHEMA
 from utils.geocoding import geocode_cities
+
+# DIM_CITY_SCHEMA without LAT/LON; coordinates are needed internally to compute
+# distances in DIM_TRIP but must not appear in the public dimension table.
+_DIM_CITY_COORDS_SCHEMA = StructType(
+    [
+        *DIM_CITY_SCHEMA.fields,
+        StructField("LAT", DoubleType(), nullable=True),
+        StructField("LON", DoubleType(), nullable=True),
+    ]
+)
 
 # country_converter logs a WARNING for every unrecognised name (e.g. French
 # abbreviations like "Emirats").  Raise to ERROR so only hard failures surface.
@@ -56,8 +66,8 @@ def build_dim_city_initial(spark: SparkSession, config: ETLConfig) -> DataFrame:
 
     Returns:
         DataFrame matching DIM_CITY_SCHEMA with one row per distinct city found
-        in the PERSONNEL files.  LAT, LON and TIMEZONE_IANA are null at this
-        stage; IS_ORG_SITE is True for every row.
+        in the PERSONNEL files. TIMEZONE_IANA is null at this stage;
+        IS_ORG_SITE is True for every row.
     """
     paths = [config.personnel_path(s) for s in SITES]
     sdf_raw = read_semicolon_many(spark, paths, schema=PERSONNEL_RAW_SCHEMA)
@@ -75,20 +85,19 @@ def build_dim_city_initial(spark: SparkSession, config: ETLConfig) -> DataFrame:
         *[x for kv in iso2_map.items() for x in (F.lit(kv[0]), F.lit(kv[1]))]
     )
 
-    return (
+    rows_raw = (
         sdf_cities.withColumn("COUNTRY_ISO2", country_map_expr[F.col("PAYS")])
         .withColumn("IS_ORG_SITE", F.lit(True))
         .withColumn("TIMEZONE_IANA", F.lit(None).cast("string"))
-        .withColumn("LAT", F.lit(None).cast("double"))
-        .withColumn("LON", F.lit(None).cast("double"))
-        .withColumn(
-            "SK_CITY",
-            F.row_number()
-            .over(Window.partitionBy(F.lit(1)).orderBy("CITY_NAME"))
-            .cast("long"),
-        )
-        .select(DIM_CITY_SCHEMA.fieldNames())
+        .collect()
     )
+    result = [
+        (sk, r.CITY_NAME, r.COUNTRY_ISO2, r.IS_ORG_SITE, r.TIMEZONE_IANA)
+        for sk, r in enumerate(
+            sorted(rows_raw, key=lambda r: r.CITY_NAME or ""), start=1
+        )
+    ]
+    return spark.createDataFrame(result, schema=DIM_CITY_SCHEMA)
 
 
 def build_dim_city_augmented(
@@ -113,8 +122,10 @@ def build_dim_city_augmented(
             used as the base set of already-known cities.
 
     Returns:
-        DataFrame matching DIM_CITY_SCHEMA combining original org-site rows
-        (with LAT/LON filled) and new mission cities (IS_ORG_SITE = False).
+        DataFrame with the columns of DIM_CITY_SCHEMA **plus LAT and LON**
+        (internal use only — callers must drop those columns before storing
+        the final dimension table).  LAT/LON are needed by build_dim_trip to
+        compute geodesic distances and must not be propagated further.
     """
     initial_rows = sdf_dim_city_initial.collect()
     initial_city_names = {r.CITY_NAME for r in initial_rows}
@@ -188,4 +199,4 @@ def build_dim_city_augmented(
             )
         )
 
-    return spark.createDataFrame(result_rows, schema=DIM_CITY_SCHEMA)
+    return spark.createDataFrame(result_rows, schema=_DIM_CITY_COORDS_SCHEMA)

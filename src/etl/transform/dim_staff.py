@@ -2,7 +2,6 @@
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.window import Window
 
 from config.settings import SITES, ETLConfig
 from etl.extract.readers import read_semicolon_many
@@ -66,11 +65,6 @@ def build_dim_staff(
             sdf_dim_city.select(F.col("SK_CITY").alias("SK_SITE"), "CITY_NAME"),
             F.col("VILLE") == F.col("CITY_NAME"),
         )
-        .withColumn(
-            "SK_STAFF",
-            F.row_number()
-            .over(Window.partitionBy(F.lit(1)).orderBy("NK_STAFF"))
-            .cast("long"),
-        )
+        .withColumn("SK_STAFF", F.monotonically_increasing_id())
         .select(DIM_STAFF_SCHEMA.fieldNames())
     )

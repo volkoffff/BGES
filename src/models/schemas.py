@@ -30,8 +30,6 @@ DIM_CITY_SCHEMA = StructType(
         StructField("COUNTRY_ISO2", StringType(), nullable=True),
         StructField("IS_ORG_SITE", BooleanType(), nullable=False),
         StructField("TIMEZONE_IANA", StringType(), nullable=True),
-        StructField("LAT", DoubleType(), nullable=True),
-        StructField("LON", DoubleType(), nullable=True),
     ]
 )
 
