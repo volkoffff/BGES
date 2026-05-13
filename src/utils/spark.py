@@ -3,6 +3,9 @@
 import os
 
 os.environ["PYARROW_IGNORE_TIMEZONE"] = "1"
+# Tells Spark to bind directly to loopback instead of resolving the hostname —
+# suppresses "hostname resolves to a loopback address" on WSL/Docker setups.
+os.environ.setdefault("SPARK_LOCAL_IP", "127.0.0.1")
 
 from pyspark.sql import SparkSession
 
