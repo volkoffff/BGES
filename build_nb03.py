@@ -40,10 +40,9 @@ Réponses aux 20 questions du projet NF26 — Bilan Gaz à Effet de Serre.
 
 Plage d'analyse : **2026-05-01 → 2026-10-31** (tous les 6 sites)."""),
 
-    # ── 02 — Setup ───────────────────────────────────────────────────────────
+    # ── 02a — Path setup (doit s'exécuter avant les imports projet) ──────────
     code("""\
 import os
-from datetime import date
 from pathlib import Path
 import sys
 import tomllib
@@ -59,14 +58,20 @@ with _cfg_file.open("rb") as _f:
 _src_path: Path = (_project_root / _cfg["paths"]["src_path"]).resolve()
 _data_path: Path = (_project_root / _cfg["paths"]["data_path"]).resolve()
 
-sys.path.insert(0, str(_src_path))
+# Doit être exécuté AVANT tout import de module du projet (config, jobs, utils…)
+sys.path.insert(0, str(_src_path))\
+"""),
+
+    # ── 02b — Imports projet + SparkSession ──────────────────────────────────
+    code("""\
+from datetime import date
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 
 from config.settings import ETLConfig
-from jobs.initial_load import InitialTables, run_initial_load
 from jobs.daily_load import DailyTables, run_daily_load
+from jobs.initial_load import InitialTables, run_initial_load
 from utils.spark import get_spark
 
 spark: SparkSession = get_spark()
