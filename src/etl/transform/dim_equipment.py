@@ -18,8 +18,8 @@ def build_dim_equipment(spark: SparkSession, config: ETLConfig) -> DataFrame:
         DataFrame matching DIM_EQUIPMENT_SCHEMA with SK_EQUIPMENT, TYPE,
         MODEL and CO2_IMPACT_KG_REF columns ordered by (TYPE, MODEL).
     """
-    rows_raw = read_comma(spark, config.co2_ref_path()).collect()
-    result = [
+    rows_raw: list = read_comma(spark, config.co2_ref_path()).collect()
+    result: list[tuple[int, str | None, str | None, float | None]] = [
         (
             sk,
             r["Type"],

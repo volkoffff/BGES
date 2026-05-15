@@ -5,7 +5,7 @@ from pyspark.sql import DataFrame, SparkSession
 from models.schemas import DIM_TRANSPORT_TYPE_SCHEMA
 
 # Columns: (SK, TRANSPORT_NAME, CO2_FACTOR_KG_PER_KM) — ADEME Base Carbone 2024
-_ROWS = [
+_ROWS: list[tuple[int, str, float]] = [
     (1, "Avion court-courrier", 0.230),
     (2, "Avion long-courrier", 0.187),
     (3, "Train", 0.006),

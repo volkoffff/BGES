@@ -4,7 +4,6 @@ from pyspark.sql.types import (
     BooleanType,
     DateType,
     DoubleType,
-    IntegerType,
     LongType,
     StringType,
     StructField,
@@ -17,9 +16,6 @@ DIM_DATE_SCHEMA = StructType(
     [
         StructField("SK_DATE", LongType(), nullable=False),
         StructField("DATE_ISO", DateType(), nullable=False),
-        StructField("YEAR", IntegerType(), nullable=False),
-        StructField("MONTH", IntegerType(), nullable=False),
-        StructField("DAY", IntegerType(), nullable=False),
     ]
 )
 
@@ -40,6 +36,7 @@ DIM_STAFF_SCHEMA = StructType(
         StructField("LAST_NAME", StringType(), nullable=True),
         StructField("FIRST_NAME", StringType(), nullable=True),
         StructField("JOB_TITLE", StringType(), nullable=True),
+        StructField("ACTIVITY_SECTOR", StringType(), nullable=True),
         StructField("BIRTH_DATE", DateType(), nullable=True),
         StructField("SK_SITE", LongType(), nullable=False),
     ]

@@ -8,7 +8,12 @@ from models.schemas import DIM_TRIP_SCHEMA
 
 
 @F.udf(DoubleType())
-def _geodesic_km(lat1, lon1, lat2, lon2):
+def _geodesic_km(
+    lat1: float | None,
+    lon1: float | None,
+    lat2: float | None,
+    lon2: float | None,
+) -> float | None:
     # Inline import so cloudpickle serialises bytecode only — no utils.distance
     # dependency at the Spark worker level (workers lack src/ on their sys.path).
     if any(v is None for v in (lat1, lon1, lat2, lon2)):

@@ -1,0 +1,6 @@
+1 la colonne date_iso est la seulle que l'on garde dans la table dim_date avec sk_date comme clé primaire pas besoin de garder month year day etc... on peut les calculer à partir de date_iso
+2 les timezone iana dans dim_city sont tous null il faudrait les remplir pour pouvoir faire des analyses temporelles correctes. la correction doit etre faite dans le script initial comme le script daily
+3 dans la table dim_staff il manque la colonne activity sector qui correspond a la fonction des emplyés
+4 les corrections que tu doit faire font etre faite de manère globale sur le projet et pas seulement dans les scripts de transformation et de chargement mais aussi dans les notebooks d'analyse. corrige bien tout dans l'ensemble du projet pour éviter les incohérences et les erreurs dans les analyses futures.
+5 il faut ameliorer le typage global dans le projet essaye de typer toutes les variables et les fonctions dans les scripts de transformation et de chargement meme les notebook doivent utiliser du typage pour les variables et les fonctions.
+6 Notre objectif est d'avoir un notebook 3 qui creer une varaible spark dataframe par table en respectant le nommage sdf_dim_nomTable ou sdf_fact_nomTable et de typer toutes les variables et fonctions pour une meilleure lisibilité et maintenabilité du code.

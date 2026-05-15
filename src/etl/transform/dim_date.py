@@ -12,22 +12,22 @@ def build_dim_date(
     start: date = date(2026, 1, 1),
     end: date = date(2027, 12, 31),
 ) -> DataFrame:
-    """Generate one DIM_DATE row per calendar day in [start, end].
+    """Génère une ligne DIM_DATE par jour calendaire dans [start, end].
 
     Args:
-        spark: Active SparkSession used to create the DataFrame.
-        start: First date to include, inclusive (default: 2026-01-01).
-        end: Last date to include, inclusive (default: 2027-12-31).
+        spark: SparkSession active.
+        start: Premier jour inclus (défaut : 2026-01-01).
+        end: Dernier jour inclus (défaut : 2027-12-31).
 
     Returns:
-        DataFrame matching DIM_DATE_SCHEMA with SK_DATE, DATE_ISO, YEAR,
-        MONTH and DAY columns.
+        DataFrame conforme à DIM_DATE_SCHEMA avec SK_DATE et DATE_ISO uniquement.
+        YEAR, MONTH, DAY se calculent via F.year/F.month/F.dayofmonth(DATE_ISO).
     """
-    rows = []
-    sk = 1
-    current = start
+    rows: list[tuple[int, date]] = []
+    sk: int = 1
+    current: date = start
     while current <= end:
-        rows.append((sk, current, current.year, current.month, current.day))
+        rows.append((sk, current))
         sk += 1
         current += timedelta(days=1)
     return spark.createDataFrame(rows, schema=DIM_DATE_SCHEMA)
